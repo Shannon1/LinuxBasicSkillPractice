@@ -3,5 +3,5 @@ project(lbsp)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES main.cpp backlog.h)
-add_executable(lbsp ${SOURCE_FILES})
+set(SOURCE_FILES main.cpp backlog.h accept.h)
+add_executable(lbsp ${SOURCE_FILES} accept.h)
