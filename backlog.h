@@ -16,7 +16,7 @@
 
 static bool stop = false;
 
-static void handle_term(int sig)
+static void handle_term(int /*sig*/)
 {
     stop = true;
 }
