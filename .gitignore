@@ -33,3 +33,6 @@
 
 # idea dir
 .idea
+
+# build dir
+cmake-build-*
