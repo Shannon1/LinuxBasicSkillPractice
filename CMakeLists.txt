@@ -3,8 +3,10 @@ project(lbsp)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES main.cpp backlog.h accept.h)
-add_executable(lbsp ${SOURCE_FILES})
+set(SOURCE_FILES )
+#add_executable(lbsp ${SOURCE_FILES})
 
 add_subdirectory(msg_oob)
 add_subdirectory(tcp_buf)
+add_subdirectory(accept)
+add_subdirectory(backlog)
