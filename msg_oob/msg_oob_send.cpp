@@ -17,6 +17,7 @@ int main(int argc, char* argv[])
     {
         std::cout << "Usage:\n" << std::string(argv[0])
                   << " ip port" << std::endl;
+        return 1;
     }
 
     std::string ip(argv[1]);

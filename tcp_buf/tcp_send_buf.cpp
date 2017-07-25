@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
     if (argc <= 3) {
         std::cout << "Usage:\n\t" << std::string(argv[0])
                   << " ip port buffer_size" << std::endl;
+        return 1;
     }
 
     std::string ip(argv[1]);
