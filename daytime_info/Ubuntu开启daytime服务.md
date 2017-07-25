@@ -1,4 +1,4 @@
-# Ubuntu 开启daytime服务
+# Ubuntu开启daytime服务
 
 ## 第一步： 需要安装xinetd服务
 ```shell
