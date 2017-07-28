@@ -21,7 +21,7 @@
 int main(int argc, char* argv[])
 {
     if (argc != 2) {
-        std::cout << "Usage:\n\t filename " << std::string(arvg[0]) << std::endl;
+        std::cout << "Usage:\n\t filename " << std::string(argv[0]) << std::endl;
         return 1;
     }
 
