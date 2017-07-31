@@ -74,7 +74,7 @@ LINE_STATUS parse_line(char* buffer, int& checked_index, int& read_index)
     }
 }
 
-HTTP_CODE parse_requestline(char* tmp, CHECK_STATE& check_state)
+HTTP_CODE parse_requestline(char* temp, CHECK_STATE& check_state)
 {
     char* url = strpbrk(temp, " \t");
     if (!url) {
@@ -102,7 +102,7 @@ HTTP_CODE parse_requestline(char* tmp, CHECK_STATE& check_state)
         return BAD_REQUEST;
     }
 
-    if (strcasecmp(url, HTTP_PROTO, sizeof(HTTP_PROTO)) == 0) {
+    if (strncasecmp(url, HTTP_PROTO, sizeof(HTTP_PROTO)) == 0) {
         url += 7;
         url = strchr(url, '/');
     }
@@ -120,7 +120,7 @@ HTTP_CODE parse_headers(char* temp)
 {
     if (temp[0] == '\0') {
         return GET_REQUEST;
-    } else if (strcasecmp(temp, HEADER_HOST, sizeof(HEADER_HOST)) == 0) {
+    } else if (strncasecmp(temp, HEADER_HOST, sizeof(HEADER_HOST)) == 0) {
         temp += sizeof(HEADER_HOST);
         temp += strspn(temp, " \t");
         std::cout << "the request host is: " << std::string(temp) << std::endl;
@@ -166,7 +166,69 @@ HTTP_CODE parse_content(char* buffer, int& checked_index, CHECK_STATE& check_sta
     }
 }
 
-int main(int argc, char* argv)
+int main(int argc, char* argv[])
 {
+    if (argc <= 2) {
+        std::cout << "Usage: \n\t" << std::string(argv[0]) << "ip port\n";
+        return 1;
+    }
 
+    std::string ip(argv[1]);
+    uint16_t port = (uint16_t)atoi(argv[2]);
+
+    struct sockaddr_in address;
+    bzero(&address, sizeof(address));
+    address.sin_family = AF_INET;
+    inet_pton(AF_INET, ip.c_str(), &address.sin_addr);
+    address.sin_port = htons(port);
+
+    auto sock = socket(AF_INET, SOCK_STREAM, 0);
+    assert(sock > 0);
+
+    auto ec_bind = bind(sock, (struct sockaddr*)&address, sizeof(address));
+    assert(ec_bind != -1);
+
+    auto ec_listen = listen(sock, 5);
+    assert(ec_listen != -1);
+
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_len = sizeof(client_addr);
+    auto connfd = accept(sock, (struct sockaddr*)&client_addr, &client_addr_len);
+    if (connfd < 0) {
+        std::cout << "errno is " << errno << std::endl;
+    } else {
+        char buffer[BUFFER_SIZE];
+        bzero(buffer, BUFFER_SIZE);
+        int data_read = 0;
+        int read_index = 0;
+        int checked_index = 0;
+        int start_line = 0;
+        CHECK_STATE check_state = CHECK_STATE_REQUESTLINE;
+
+        while (1) {
+            data_read = recv(connfd, buffer + read_index, BUFFER_SIZE - read_index, 0);
+            if (data_read == -1) {
+                std::cout << "reading failed\n";
+                break;
+            } else if (data_read == 0) {
+                std::cout << "remote client has closed the connection\n";
+            }
+
+            read_index += data_read;
+            auto result = parse_content(buffer, checked_index, check_state, read_index, start_line);
+            if (result == NO_REQUEST) {
+                continue;
+            } else if (result == GET_REQUEST) {
+                send(connfd, ret_correct.c_str(), ret_correct.size(), 0);
+                break;
+            } else {
+                send(connfd, ret_wrong.c_str(), ret_wrong.size(), 0);
+                break;
+            }
+        }
+        close(connfd);
+    }
+
+    close(sock);
+    return 0;
 }
