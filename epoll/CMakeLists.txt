@@ -5,4 +5,5 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES )
 add_executable(ltet ${SOURCE_FILES} ltet.cpp)
-target_link_libraries(ltet pthread)
+add_executable(oneshot ${SOURCE_FILES} oneshot.cpp)
+target_link_libraries(oneshot pthread)
