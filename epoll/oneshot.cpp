@@ -17,14 +17,10 @@
 #include <sstream>
 #include <sys/epoll.h>
 #include <pthread.h>
+#include <thread>
 
 const static size_t MAX_EVENT_NUMBER = 1024;
 const static size_t BUFFER_SIZE = 1024;
-
-struct fds {
-    int epoll_fd;
-    int sock_fd;
-};
 
 int set_nonblocking(int fd)
 {
@@ -51,15 +47,12 @@ void reset_oneshot(int epoll_fd, int fd)
     epoll_event event;
     event.data.fd = fd;
     event.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
+    epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event);
     set_nonblocking(fd);
 }
 
-void* work(void* arg)
+void* work(int sock_fd, int epoll_fd)
 {
-    int sock_fd = ((fds*)arg)->sock_fd;
-    int epoll_fd = ((fds*)arg)->epoll_fd;
-
     std::cout << "start new thread to receive data on fd: " << sock_fd << std::endl;
     char buffer[BUFFER_SIZE];
     bzero(buffer, BUFFER_SIZE);
@@ -134,11 +127,8 @@ int main(int argc, char* argv[])
                 auto conn_fd = accept(listen_fd, (struct sockaddr*)&client_addr, &client_addr_len);
                 add_fd(epoll_fd, conn_fd, true);    // register EPOLLONESHOT for every connection
             } else if (events[i].events & EPOLLIN) {
-                pthread_t thread;
-                fds fds_worker{};
-                fds_worker.epoll_fd = epoll_fd;
-                fds_worker.sock_fd = sock_fd;
-                pthread_create(&thread, NULL, work, (void*)&fds_worker);
+                std::thread th(&work, sock_fd, epoll_fd);
+                th.join();
             } else {
                 std::cout << "something else happend\n";
             }
