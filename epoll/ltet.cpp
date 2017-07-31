@@ -36,8 +36,8 @@ void add_fd(int epoll_fd, int fd, bool enable_et)
     event.data.fd = fd;
     event.events = EPOLLIN;
     if (enable_et) {
-        event.events |= EPOLLIN;
-    }
+        event.events |= EPOLLET;
+    }   // else { LT is default;}
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
     set_nonblocking(fd);
 }
@@ -135,8 +135,9 @@ int main(int argc, char* argv[])
     assert(ret_listen != -1);
 
     epoll_event events[MAX_EVENT_NUMBER];
-    int epoll_fd = epoll_create(0);
-    assert(epoll_fd > 0);
+    int epoll_fd = epoll_create(1234);
+    assert(epoll_fd != -1);
+    add_fd(epoll_fd, listen_fd, false);
 
     while (true) {
         int ret_ewait = epoll_wait(epoll_fd, events, MAX_EVENT_NUMBER, -1);
