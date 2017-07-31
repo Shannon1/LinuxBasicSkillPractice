@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
         int start_line = 0;
         CHECK_STATE check_state = CHECK_STATE_REQUESTLINE;
 
-        while (1) {
+        while (true) {
             data_read = recv(connfd, buffer + read_index, BUFFER_SIZE - read_index, 0);
             if (data_read == -1) {
                 std::cout << "reading failed\n";
