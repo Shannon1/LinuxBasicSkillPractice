@@ -38,7 +38,11 @@ static const std::string ret_wrong = "Something wrong\n";
 
 static const char CR = '\r';
 static const char LF = '\n';
-static const std::string CRLF = "\r\n";
+static const char* CRLF = "\r\n";
+static const char* GET_METHOD = "GET";
+static const char* HTTP_VERSION = "HTTP/1.1";
+static const char* HTTP_PROTO = "http://";
+static const char* HEADER_HOST = "host:";
 
 LINE_STATUS parse_line(char* buffer, int& checked_index, int& read_index)
 {
@@ -72,7 +76,94 @@ LINE_STATUS parse_line(char* buffer, int& checked_index, int& read_index)
 
 HTTP_CODE parse_requestline(char* tmp, CHECK_STATE& check_state)
 {
+    char* url = strpbrk(temp, " \t");
+    if (!url) {
+        return BAD_REQUEST;
+    }
 
+    *url++ = '\0';
+
+    char* method = temp;
+    if (strcasecmp(method, GET_METHOD) == 0) {
+        std::cout << "The request method is GET\n";
+    } else {
+        return BAD_REQUEST;
+    }
+
+    url += strspn(url, " \t");
+    char* version = strpbrk(url, " \t");
+    if (!version) {
+        return BAD_REQUEST;
+    }
+
+    *version++ = '0';
+    version += strspn(version, " \t");
+    if (strcasecmp(version, HTTP_VERSION) != 0) {
+        return BAD_REQUEST;
+    }
+
+    if (strcasecmp(url, HTTP_PROTO, sizeof(HTTP_PROTO)) == 0) {
+        url += 7;
+        url = strchr(url, '/');
+    }
+
+    if (!url || url[0] != '/') {
+        return BAD_REQUEST;
+    }
+
+    std::cout << "The request URL is: " << std::string(url) << std::endl;
+    check_state = CHECK_STAT_HEADER;
+    return NO_REQUEST;
+}
+
+HTTP_CODE parse_headers(char* temp)
+{
+    if (temp[0] == '\0') {
+        return GET_REQUEST;
+    } else if (strcasecmp(temp, HEADER_HOST, sizeof(HEADER_HOST)) == 0) {
+        temp += sizeof(HEADER_HOST);
+        temp += strspn(temp, " \t");
+        std::cout << "the request host is: " << std::string(temp) << std::endl;
+    } else {
+        std::cout << "I can not handle this header\n";
+    }
+    return NO_REQUEST;
+}
+
+HTTP_CODE parse_content(char* buffer, int& checked_index, CHECK_STATE& check_state, int& read_index, int& start_line)
+{
+    LINE_STATUS line_status = LINE_OK;
+    HTTP_CODE ret_code = NO_REQUEST;
+    while ((line_status = parse_line(buffer, checked_index, read_index)) == LINE_OK) {
+        char* temp = buffer + start_line;
+        start_line = checked_index;
+
+        switch (check_state) {
+            case CHECK_STATE_REQUESTLINE:
+            {
+                ret_code = parse_requestline(temp, check_state);
+                if (ret_code == BAD_REQUEST) return BAD_REQUEST;
+                break;
+            }
+            case CHECK_STAT_HEADER:
+            {
+                ret_code = parse_headers(temp);
+                if (ret_code == BAD_REQUEST) return BAD_REQUEST;
+                else if (ret_code == GET_REQUEST) return GET_REQUEST;
+                break;
+            }
+            default:
+            {
+                return INTERNAL_ERROR;
+            }
+        }
+    }
+
+    if (line_status == LINE_OK) {
+        return NO_REQUEST;
+    } else {
+        return BAD_REQUEST;
+    }
 }
 
 int main(int argc, char* argv)
